@@ -198,10 +198,15 @@ rss:
       enabled: false
 
     # YouTube - 官方 RSS
-    # Gaming Trending 频道
-    - id: "youtube-gaming"
-      name: "YouTube Gaming"
-      url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCBJcsmfviCevPiYuAeKhbdQ"
+    # IGN（热门游戏频道）
+    - id: "youtube-ign"
+      name: "YouTube IGN"
+      url: "https://www.youtube.com/feeds/videos.xml?user=IGN"
+
+    # 其他游戏频道（可按需启用）
+    # - id: "youtube-gamespot"
+    #   name: "YouTube GameSpot"
+    #   url: "https://www.youtube.com/feeds/videos.xml?user=GameSpot"
 
     # 小红书 - 第三方服务（不稳定）
     - id: "xiaohongshu-hot"
