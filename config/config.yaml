@@ -104,10 +104,12 @@ rss:
       name: "Steam 新品"
       url: "https://store.steampowered.com/feeds/newreleases/"
 
-    # TapTap - 通过 RSSHub
+    # TapTap - 官方 RSS（如遇403可改用客户端RSS）
     - id: "taptap"
       name: "TapTap 发现"
-      url: "https://rss-hub-vert-five.vercel.app/taptap/timeline"
+      url: "https://www.taptap.cn/moment/rss/1"
+      # 备用URL: https://www.taptap.cn/moment/rss/3 (Android)
+      # 备用URL: https://www.taptap.cn/moment/rss/2 (iOS)
 
     # ==================== AI 相关（已验证可用） ====================
     - id: "36kr"
@@ -118,23 +120,24 @@ rss:
       name: "OpenAI Blog"
       url: "https://openai.com/news/rss.xml"
 
-    # 36氪 AI相关 - 通过 RSSHub
-    - id: "36kr-ai"
-      name: "36氪 AI相关"
-      url: "https://rss-hub-vert-five.vercel.app/36kr/search/AI"
+    - id: "anthropic-blog"
+      name: "Anthropic Blog"
+      url: "https://www.anthropic.com/news/rss.xml"
 
-    # 通过 RSSHub 绕过反爬虫
+    # IT之家 - 使用客户端RSS避免403
     - id: "ithome"
       name: "IT之家"
-      url: "https://rss-hub-vert-five.vercel.app/ithome"
+      url: "https://www.ithome.com/rss/client.xml"
 
+    # 量子位 - 使用备用RSS（有403风险）
     - id: "qbitai"
       name: "量子位"
-      url: "https://rss-hub-vert-five.vercel.app/qbitai"
+      url: "https://www.qbitai.com/feed"
 
+    # 机器之心 - 使用备用RSS（有403风险）
     - id: "jiqizhixin"
       name: "机器之心"
-      url: "https://rss-hub-vert-five.vercel.app/jiqizhixin"
+      url: "https://www.jiqizhixin.com/rss"
 
     # ==================== 科技/产品（已验证可用） ====================
     - id: "sifou"
@@ -158,57 +161,53 @@ rss:
       name: "Wired"
       url: "https://www.wired.com/feed/rss"
 
-    # Product Hunt - 通过 RSSHub 绕过反爬虫
+    # Product Hunt - 官方 RSS（有反爬虫限制，可能403）
     - id: "product-hunt"
       name: "Product Hunt"
-      url: "https://rss-hub-vert-five.vercel.app/producthunt"
+      url: "https://www.producthunt.com/posts.rss"
+      enabled: false
 
-    # ==================== 社交媒体（通过 RSSHub） ====================
-    # Reddit - 通过 RSSHub 绕过429限制
+    # ==================== 社交媒体（使用官方 RSS） ====================
+    # Reddit - 官方 RSS（注意：请求过多会触发429）
     - id: "reddit-gaming"
       name: "Reddit r/gaming"
-      url: "https://rss-hub-vert-five.vercel.app/reddit/subreddit/gaming"
+      url: "https://www.reddit.com/r/gaming/hot/.rss"
 
     - id: "reddit-games"
       name: "Reddit r/Games"
-      url: "https://rss-hub-vert-five.vercel.app/reddit/subreddit/Games"
+      url: "https://www.reddit.com/r/Games/hot/.rss"
 
     - id: "reddit-ai"
       name: "Reddit r/artificial"
-      url: "https://rss-hub-vert-five.vercel.app/reddit/subreddit/artificial"
+      url: "https://www.reddit.com/r/artificial/hot/.rss"
 
     - id: "reddit-machinelearning"
       name: "Reddit r/MachineLearning"
-      url: "https://rss-hub-vert-five.vercel.app/reddit/subreddit/MachineLearning"
+      url: "https://www.reddit.com/r/MachineLearning/hot/.rss"
 
-    # X (Twitter) - 通过 RSSHub
-    # 关注游戏相关账号
+    # X/Twitter - 需要第三方 Nitter 实例（不稳定）
+    # 如需稳定使用，请在 Vercel RSSHub 配置 TWITTER_API_KEY 等环境变量
     - id: "twitter-gaming"
-      name: "X Gaming"
-      url: "https://rss-hub-vert-five.vercel.app/twitter/user/Gaming"
+      name: "X Gaming (Nitter)"
+      url: "https://nitter.net/search/gaming%20news/rss"
+      enabled: false
 
-    - id: "twitter-ign"
-      name: "X IGN"
-      url: "https://rss-hub-vert-five.vercel.app/twitter/user/IGN"
+    - id: "twitter-ai"
+      name: "X AI (Nitter)"
+      url: "https://nitter.net/search/ai%20news/rss"
+      enabled: false
 
-    # AI相关账号
-    - id: "twitter-openai"
-      name: "X OpenAI"
-      url: "https://rss-hub-vert-five.vercel.app/twitter/user/OpenAI"
-
-    - id: "twitter-anthropic"
-      name: "X Anthropic"
-      url: "https://rss-hub-vert-five.vercel.app/twitter/user/AnthropicAI"
-
-    # YouTube - 通过 RSSHub
+    # YouTube - 官方 RSS
+    # Gaming Trending 频道
     - id: "youtube-gaming"
       name: "YouTube Gaming"
-      url: "https://rss-hub-vert-five.vercel.app/youtube/user/UCBJcsmfviCevPiYuAeKhbdQ"
+      url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCBJcsmfviCevPiYuAeKhbdQ"
 
-    # 小红书 - 通过 RSSHub
-    - id: "xiaohongshu-trending"
-      name: "小红书趋势"
-      url: "https://rss-hub-vert-five.vercel.app/xiaohongshu/user/trending"
+    # 小红书 - 第三方服务（不稳定）
+    - id: "xiaohongshu-hot"
+      name: "小红书热门"
+      url: "https://xiaohongshu-search-api.vercel.app/api/rss"
+      enabled: false
 
     # ==================== 其他（备用） ====================
     - id: "yahoo-finance"
