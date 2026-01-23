@@ -24,6 +24,11 @@ class AIAnalysisResult:
     rss_insights: str = ""               # RSS 深度洞察
     outlook_strategy: str = ""           # 研判与策略建议
 
+    # SEO 新词挖掘板块
+    new_games: str = ""                  # 新游戏发现（JSON字符串）
+    ai_hotspots: str = ""                # AI热点（JSON字符串）
+    new_word_summary: str = ""           # 新词挖掘总结
+
     # 基础元数据
     raw_response: str = ""               # 原始响应
     success: bool = False                # 是否成功
@@ -428,7 +433,12 @@ class AIAnalyzer:
             result.signals = data.get("signals", "")
             result.rss_insights = data.get("rss_insights", "")
             result.outlook_strategy = data.get("outlook_strategy", "")
-            
+
+            # SEO 新词挖掘字段解析
+            result.new_games = json.dumps(data.get("new_games", {}), ensure_ascii=False)
+            result.ai_hotspots = json.dumps(data.get("ai_hotspots", {}), ensure_ascii=False)
+            result.new_word_summary = data.get("new_word_summary", "")
+
             result.success = True
 
         except json.JSONDecodeError as e:

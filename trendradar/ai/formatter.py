@@ -87,6 +87,18 @@ def render_ai_analysis_feishu(result: AIAnalysisResult) -> str:
 
     lines = ["**✨ AI 热点分析**", ""]
 
+    # 新词挖掘总结（放在最前面）
+    if result.new_word_summary:
+        lines.extend(["**📊 新词挖掘总结**", result.new_word_summary, ""])
+
+    # 新游戏板块
+    if result.new_games:
+        lines.extend(["**🎮 新游戏发现**", _format_new_words(result.new_games), ""])
+
+    # AI热点板块
+    if result.ai_hotspots:
+        lines.extend(["**🤖 AI 热点追踪**", _format_new_words(result.ai_hotspots), ""])
+
     if result.core_trends:
         lines.extend(["**核心热点态势**", _format_list_content(result.core_trends), ""])
 
@@ -103,6 +115,97 @@ def render_ai_analysis_feishu(result: AIAnalysisResult) -> str:
         lines.extend(["**研判策略建议**", _format_list_content(result.outlook_strategy)])
 
     return "\n".join(lines)
+
+
+def _format_new_words(json_str: str) -> str:
+    """格式化新词JSON字符串为可读文本"""
+    if not json_str:
+        return "暂无"
+
+    try:
+        import json
+        data = json.loads(json_str)
+        lines = []
+
+        # 处理国内新词
+        domestic = data.get("domestic", [])
+        international = data.get("international", [])
+
+        if domestic:
+            lines.append("📍 **国内**")
+            for item in domestic:
+                word = item.get("word", "")
+                level = item.get("level", "")
+                rank = item.get("rank", "")
+                seo = item.get("seo_potential", "")
+                extra_fields = []
+
+                # 添加游戏特有字段
+                if "release_status" in item:
+                    extra_fields.append(f"状态: {item.get('release_status', '')}")
+                if "developer" in item:
+                    extra_fields.append(f"开发商: {item.get('developer', '')}")
+                if "platform" in item:
+                    extra_fields.append(f"平台: {item.get('platform', '')}")
+                if "genre" in item:
+                    extra_fields.append(f"类型: {item.get('genre', '')}")
+
+                # 添加AI特有字段
+                if "type" in item and "release_status" not in item:
+                    extra_fields.append(f"类型: {item.get('type', '')}")
+                if "related_keywords" in item:
+                    extra_fields.append(f"相关: {item.get('related_keywords', '')}")
+
+                level_emoji = {"S": "🔥", "A": "⭐", "B": "📌", "C": "👁️"}.get(level, "")
+
+                line_parts = [f"{level_emoji} {word}"]
+                if rank:
+                    line_parts.append(f"#{rank}")
+                if extra_fields:
+                    line_parts.append(" | ".join(extra_fields))
+                if seo:
+                    line_parts.append(f"\n   💡 {seo}")
+
+                lines.append("   " + " ".join(line_parts))
+
+        if international:
+            lines.append("🌍 **国外**")
+            for item in international:
+                word = item.get("word", "")
+                level = item.get("level", "")
+                rank = item.get("rank", "")
+                seo = item.get("seo_potential", "")
+                extra_fields = []
+
+                if "release_status" in item:
+                    extra_fields.append(f"状态: {item.get('release_status', '')}")
+                if "developer" in item:
+                    extra_fields.append(f"开发商: {item.get('developer', '')}")
+                if "platform" in item:
+                    extra_fields.append(f"平台: {item.get('platform', '')}")
+                if "genre" in item:
+                    extra_fields.append(f"类型: {item.get('genre', '')}")
+
+                if "type" in item and "release_status" not in item:
+                    extra_fields.append(f"类型: {item.get('type', '')}")
+                if "related_keywords" in item:
+                    extra_fields.append(f"相关: {item.get('related_keywords', '')}")
+
+                level_emoji = {"S": "🔥", "A": "⭐", "B": "📌", "C": "👁️"}.get(level, "")
+
+                line_parts = [f"{level_emoji} {word}"]
+                if rank:
+                    line_parts.append(f"#{rank}")
+                if extra_fields:
+                    line_parts.append(" | ".join(extra_fields))
+                if seo:
+                    line_parts.append(f"\n   💡 {seo}")
+
+                lines.append("   " + " ".join(line_parts))
+
+        return "\n".join(lines) if lines else "暂无新词"
+    except Exception:
+        return "新词解析失败"
 
 
 def render_ai_analysis_dingtalk(result: AIAnalysisResult) -> str:
