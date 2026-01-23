@@ -86,7 +86,7 @@ rss:
   # - 正整数：覆盖全局设置，只推送此天数内的文章
   # - 0：禁用此频道的新鲜度过滤，推送所有文章
   feeds:
-    # ==================== 原有源 ====================
+    # ==================== 原有源（已验证可用） ====================
     - id: "hacker-news"
       name: "Hacker News"
       url: "https://hnrss.org/frontpage"
@@ -95,103 +95,107 @@ rss:
       name: "阮一峰的网络日志"
       url: "http://www.ruanyifeng.com/blog/atom.xml"
 
-    # ==================== 游戏相关 ====================
-    - id: "taptap"
-      name: "TapTap 发现"
-      url: "https://www.taptap.cn/moment/rss/1"
-
+    # ==================== 游戏相关（已验证可用） ====================
     - id: "gcores"
       name: "机核"
       url: "https://www.gcores.com/rss"
-
-    - id: "3dmgame"
-      name: "3DMGame"
-      url: "https://www.3dmgame.com/rss/news.xml"
 
     - id: "steam-new"
       name: "Steam 新品"
       url: "https://store.steampowered.com/feeds/newreleases/"
 
-    # ==================== AI 相关 ====================
+    # TapTap 需要特殊处理，暂时禁用
+    - id: "taptap"
+      name: "TapTap 发现"
+      url: "https://www.taptap.cn/moment/rss/1"
+      enabled: false
+
+    # ==================== AI 相关（已验证可用） ====================
     - id: "36kr"
       name: "36氪"
       url: "https://36kr.com/feed"
-
-    - id: "ithome"
-      name: "IT之家"
-      url: "https://www.ithome.com/rss/"
-
-    - id: "qbitai"
-      name: "量子位"
-      url: "https://www.qbitai.com/feed"
-
-    - id: "jiqizhixin"
-      name: "机器之心"
-      url: "https://www.jiqizhixin.com/rss"
 
     - id: "openai-blog"
       name: "OpenAI Blog"
       url: "https://openai.com/news/rss.xml"
 
-    - id: "anthropic-blog"
-      name: "Anthropic Blog"
-      url: "https://www.anthropic.com/news/rss.xml"
+    # 以下源有反爬虫限制，暂时禁用
+    - id: "ithome"
+      name: "IT之家"
+      url: "https://www.ithome.com/rss/"
+      enabled: false
 
-    # ==================== 科技/产品 ====================
+    - id: "qbitai"
+      name: "量子位"
+      url: "https://www.qbitai.com/feed"
+      enabled: false
+
+    - id: "jiqizhixin"
+      name: "机器之心"
+      url: "https://www.jiqizhixin.com/rss"
+      enabled: false
+
+    # ==================== 科技/产品（已验证可用） ====================
     - id: "sifou"
       name: "少数派"
       url: "https://sspai.com/feed"
-
-    - id: "product-hunt"
-      name: "Product Hunt"
-      url: "https://www.producthunt.com/posts.rss"
 
     - id: "v2ex"
       name: "V2EX"
       url: "https://www.v2ex.com/index.xml"
 
-    - id: "github-trending"
-      name: "GitHub Trending"
-      url: "https://github.com/trending"
+    # Product Hunt 有反爬虫限制
+    - id: "product-hunt"
+      name: "Product Hunt"
+      url: "https://www.producthunt.com/posts.rss"
+      enabled: false
 
-    # ==================== 社交媒体（RSS聚合） ====================
-    # X (Twitter) - 使用 RSSBridge 聚合
-    - id: "twitter-gaming"
-      name: "X 游戏趋势"
-      url: "https://nitter.net/search/gaming%20news%20-%20from%40gaming/rss"
-
-    - id: "twitter-ai"
-      name: "X AI讨论"
-      url: "https://nitter.net/search/ai%20news%20-%20from%04OpenAI/rss"
-
-    # YouTube - RSS 订阅
-    - id: "youtube-gaming"
-      name: "YouTube 游戏热门"
-      url: "https://www.youtube.com/rss/feed/featured"
-
-    # Reddit - 订阅
+    # ==================== 社交媒体 ====================
+    # Reddit - 只启用一个，避免429限制
     - id: "reddit-gaming"
       name: "Reddit r/gaming"
       url: "https://www.reddit.com/r/gaming/hot/.rss"
 
+    # 其他 Reddit 子版（因429限制暂时禁用）
     - id: "reddit-games"
       name: "Reddit r/Games"
       url: "https://www.reddit.com/r/Games/hot/.rss"
+      enabled: false
 
     - id: "reddit-ai"
       name: "Reddit r/artificial"
       url: "https://www.reddit.com/r/artificial/hot/.rss"
+      enabled: false
 
     - id: "reddit-machinelearning"
       name: "Reddit r/MachineLearning"
       url: "https://www.reddit.com/r/MachineLearning/hot/.rss"
+      enabled: false
 
-    # 国内平台 - 小红书（需RSS聚合）
+    # X (Twitter) - nitter实例不稳定
+    - id: "twitter-gaming"
+      name: "X 游戏趋势"
+      url: "https://nitter.net/search/gaming%20news/rss"
+      enabled: false
+
+    - id: "twitter-ai"
+      name: "X AI讨论"
+      url: "https://nitter.net/search/ai%20news/rss"
+      enabled: false
+
+    # YouTube - 官方RSS格式变化
+    - id: "youtube-gaming"
+      name: "YouTube 游戏热门"
+      url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCBJcsmfviCevPiYuAeKhbdQ"
+      enabled: false
+
+    # 小红书 - 第三方API失效
     - id: "xiaohongshu-hot"
       name: "小红书热门"
       url: "https://xiaohongshu-search-api.vercel.app/api/rss"
+      enabled: false
 
-    # ==================== 财经（备用） ====================
+    # ==================== 其他（备用） ====================
     - id: "yahoo-finance"
       name: "雅虎财经"
       url: "https://finance.yahoo.com/news/rssindex"
