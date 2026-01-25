@@ -98,20 +98,30 @@ class LocalStorageBackend(SQLiteStorageMixin, StorageBackend):
         db_dir.mkdir(parents=True, exist_ok=True)
         return db_dir / f"{date_str}.db"
 
-    def _get_connection(self, date: Optional[str] = None, db_type: str = "news") -> sqlite3.Connection:
+    def _get_connection(self, date: Optional[str] = None, db_type: str = "news", force_new: bool = False) -> sqlite3.Connection:
         """
         获取数据库连接（带缓存）
 
         Args:
             date: 日期字符串
             db_type: 数据库类型 ("news" 或 "rss")
+            force_new: 是否强制创建新连接（用于绕过缓存）
 
         Returns:
             数据库连接
         """
         db_path = str(self._get_db_path(date, db_type))
 
-        if db_path not in self._db_connections:
+        # 如果强制创建新连接或缓存中没有该连接
+        if force_new or db_path not in self._db_connections:
+            # 如果强制创建新连接且旧连接存在，先关闭旧连接
+            if force_new and db_path in self._db_connections:
+                try:
+                    self._db_connections[db_path].close()
+                except Exception:
+                    pass
+                del self._db_connections[db_path]
+
             conn = sqlite3.connect(db_path)
             conn.row_factory = sqlite3.Row
             self._init_tables(conn, db_type)
