@@ -141,13 +141,13 @@ Midjourney v6 - AI绘画工具
     "international": [
       {
         "word": "Game Name - 中文名称",
-        "release_status": "Released/Beta/Coming Soon",
-        "developer": "Developer",
-        "platform": "Mobile/PC/Console",
-        "genre": "Game Type",
+        "release_status": "已上线/公测/即将发布",
+        "developer": "开发商",
+        "platform": "手游/端游/主机/全平台",
+        "genre": "游戏类型",
         "level": "S/A/B/C",
-        "rank": "Best Rank",
-        "trend": "Viral/Rising/Stable",
+        "rank": "最佳排名",
+        "trend": "爆火/急升/稳定",
         "seo_potential": "SEO价值说明（30字）"
       }
     ]
@@ -167,12 +167,12 @@ Midjourney v6 - AI绘画工具
     "international": [
       {
         "word": "Original Name - 中文解释",
-        "type": "Model/Tool/App/Company/Tech",
+        "type": "模型/工具/应用/公司/技术",
         "level": "S/A/B/C",
-        "rank": "Best Rank",
-        "trend": "Explosive/Rising/Stable",
+        "rank": "最佳排名",
+        "trend": "爆发/急升/稳定",
         "seo_potential": "SEO价值说明（30字）",
-        "related_keywords": "related1,related2"
+        "related_keywords": "相关词1,相关词2"
       }
     ]
   },
