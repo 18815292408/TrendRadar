@@ -148,9 +148,15 @@ jobs:
       # GitHub 同步步骤
       # ════════════════════════════════════════════════════════
       - name: Sync data to GitHub
-        if: success() && secrets.GH_TOKEN != ''
+        if: success()
         run: |
-          echo "🔄 正在同步数据到 GitHub..."
+          # 检查是否配置了 GH_TOKEN
+          if [ -z "${{ secrets.GH_TOKEN }}" ]; then
+            echo "GH_TOKEN 未配置，跳过同步"
+            exit 0
+          fi
+
+          echo "正在同步数据到 GitHub..."
 
           # 配置 Git
           git config user.name "github-actions[bot]"
