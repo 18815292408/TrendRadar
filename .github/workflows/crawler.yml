@@ -149,6 +149,8 @@ jobs:
       # ═══════════════════════════════════════════════════════════════════════════════
       - name: Sync data to GitHub
         if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           python3 << 'PYTHON_SCRIPT'
           import os
