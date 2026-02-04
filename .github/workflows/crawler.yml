@@ -62,7 +62,6 @@ jobs:
         with:
           fetch-depth: 1
           clean: true
-          persist-credentials: true
 
       # ═══════════════════════════════════════════════════════════════
       # 试用期限制已移除 - 定时任务将永久运行
@@ -145,9 +144,9 @@ jobs:
           GITHUB_ACTIONS: true
         run: python -m trendradar
 
-      # ═══════════════════════════════════════════════════════════════
-      # GitHub 同步步骤
-      # ════════════════════════════════════════════════════════
+      # ═══════════════════════════════════════════════════════════════════════
+      # GitHub 同步步骤 - 使用 curl 直接调用 API
+      # ═══════════════════════════════════════════════════════════════════════
       - name: Sync data to GitHub
         if: success()
         run: |
@@ -158,10 +157,6 @@ jobs:
           fi
 
           echo "正在同步数据到 GitHub..."
-
-          # 获取当前分支的 SHA
-          BRANCH_SHA=$(gh api repos/18815292408/TrendRadar/git/ref/heads/main -q '.object.sha')
-          echo "当前分支 SHA: $BRANCH_SHA"
 
           # 获取今天的日期
           TODAY=$(date +%Y-%m-%d)
@@ -175,64 +170,57 @@ jobs:
 
           echo "发现新数据文件..."
 
-          # 初始化临时 git 仓库来构建树
-          TEMP_DIR=$(mktemp -d)
-          cd "$TEMP_DIR"
-          git init
-          git remote add origin https://github.com/18815292408/TrendRadar.git
-          git fetch --depth=1 origin $BRANCH_SHA 2>/dev/null || git fetch origin main
-          git checkout $BRANCH_SHA 2>/dev/null || git checkout main
+          # 获取当前分支的 SHA
+          BRANCH_SHA=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
+            "https://api.github.com/repos/18815292408/TrendRadar/git/ref/heads/main" | \
+            python -c "import sys,json; print(json.load(sys.stdin)['object']['sha'])")
 
-          # 复制新数据文件
-          mkdir -p output/news
-          cp -r /home/runner/work/TrendRadar/TrendRadar/output/news/* output/news/ 2>/dev/null || true
+          echo "当前分支 SHA: $BRANCH_SHA"
 
-          # 添加文件到 git
-          git add output/news/
+          # 同步每个数据库文件
+          for db_file in output/news/*.db; do
+            if [ -f "$db_file" ]; then
+              filename=$(basename "$db_file")
+              echo "同步文件: $filename"
 
-          # 获取文件的 SHA
-          TREE_JSON="["
-          first=true
-          for file in $(git diff --cached --name-only); do
-            blob_sha=$(git hash-object -w "$file")
-            if [ "$first" = true ]; then
-              first=false
-            else
-              TREE_JSON="${TREE_JSON},"
+              # 获取文件内容的 base64 编码
+              CONTENT=$(base64 -w0 "$db_file")
+
+              # 检查文件是否已存在
+              FILE_INFO=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
+                "https://api.github.com/repos/18815292408/TrendRadar/contents/output/news/$filename")
+
+              # 尝试获取 SHA
+              FILE_SHA=$(echo "$FILE_INFO" | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('sha', ''))" 2>/dev/null || echo "")
+
+              # 准备 API 请求数据
+              if [ -z "$FILE_SHA" ] || [ "$FILE_SHA" = "None" ]; then
+                # 创建新文件
+                DATA="{\"message\":\"${COMMIT_MSG}\",\"content\":\"${CONTENT}\"}"
+                RESULT=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
+                  -H "Accept: application/vnd.github.v3+json" \
+                  -X PUT \
+                  -d "$DATA" \
+                  "https://api.github.com/repos/18815292408/TrendRadar/contents/output/news/$filename")
+              else
+                # 更新现有文件
+                DATA="{\"message\":\"${COMMIT_MSG}\",\"content\":\"${CONTENT}\",\"sha\":\"${FILE_SHA}\"}"
+                RESULT=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
+                  -H "Accept: application/vnd.github.v3+json" \
+                  -X PUT \
+                  -d "$DATA" \
+                  "https://api.github.com/repos/18815292408/TrendRadar/contents/output/news/$filename")
+              fi
+
+              # 检查是否成功
+              if echo "$RESULT" | python -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if 'content' in d or 'commit' in d else 1)" 2>/dev/null; then
+                echo "  ✓ $filename 同步成功"
+              else
+                echo "  ✗ $filename 同步失败"
+                echo "$RESULT" | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('message', d))" 2>/dev/null
+              fi
             fi
-            TREE_JSON="${TREE_JSON}{\"path\":\"${file}\",\"mode\":\"100644\",\"type\":\"blob\",\"sha\":\"${blob_sha}\"}"
           done
-          TREE_JSON="${TREE_JSON}]"
 
-          # 创建树
-          TREE_SHA=$(echo "$TREE_JSON" | gh api repos/18815292408/TrendRadar/git/trees -X POST --input - -q '.sha')
-          echo "新树 SHA: $TREE_SHA"
-
-          # 创建提交
-          COMMIT_SHA=$(gh api repos/18815292408/TrendRadar/git/commits -X POST --input - -q '.sha' << EOF
-          {
-            "message": "${COMMIT_MSG}",
-            "author": {
-              "name": "github-actions[bot]",
-              "email": "github-actions[bot]@users.noreply.github.com"
-            },
-            "parents": ["${BRANCH_SHA}"],
-            "tree": "${TREE_SHA}"
-          }
-          EOF
-          )
-          echo "提交 SHA: $COMMIT_SHA"
-
-          # 更新分支引用
-          if gh api repos/18815292408/TrendRadar/git/refs/heads/main -X PATCH --input - << EOF
-          {
-            "sha": "${COMMIT_SHA}",
-            "force": true
-          }
-          EOF
-          then
-            echo "数据同步成功！"
-          else
-            echo "同步失败"
-            exit 1
-          fi
+          echo ""
+          echo "数据同步完成！"
