@@ -49,6 +49,7 @@ concurrency:
 permissions:
   contents: read
   actions: write
+  pull-requests: write
 
 jobs:
   crawl:
@@ -138,5 +139,52 @@ jobs:
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
           S3_REGION: ${{ secrets.S3_REGION }}
+          # GitHub 同步配置
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GITHUB_ACTIONS: true
         run: python -m trendradar
+
+      # ═══════════════════════════════════════════════════════════════
+      # GitHub 同步步骤
+      # ═══════════════════════════════════════════════════════════════
+      - name: Sync data to GitHub
+        if: success() && env.GH_TOKEN != ''
+        run: |
+          echo "🔄 正在同步数据到 GitHub..."
+
+          # 配置 Git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 检出目标分支（如果需要同步到不同仓库）
+          git fetch origin main || true
+
+          # 检查是否有新数据需要同步
+          if [ -d "output/news" ] && [ "$(ls -A output/news 2>/dev/null)" ]; then
+            echo "📁 发现新数据文件，添加到 Git..."
+
+            # 获取今天的日期
+            TODAY=$(date +%Y-%m-%d)
+            COMMIT_MSG="同步热点数据 - ${TODAY}"
+
+            # 添加所有新文件
+            git add output/news/
+
+            # 检查是否有变更
+            if git diff --cached --quiet; then
+              echo "✅ 没有新数据需要同步"
+            else
+              # 提交变更
+              git commit -m "${COMMIT_MSG}"
+
+              # 推送到远程
+              if git push https://x-access-token:${GH_TOKEN}@github.com/18815292408/TrendRadar.git main; then
+                echo "✅ 数据同步成功！"
+              else
+                echo "⚠️  同步失败，可能是没有新数据"
+                exit 0
+              fi
+            fi
+          else
+            echo "📭 没有数据文件需要同步"
+          fi

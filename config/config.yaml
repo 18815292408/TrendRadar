@@ -402,6 +402,14 @@ storage:
     secret_access_key: ""             # 访问密钥
     region: ""                        # 区域（可选，部分服务商需要）
 
+  # GitHub 同步配置
+  sync_to_github:
+    enabled: true                     # 是否同步到 GitHub
+    repo: "18815292408/TrendRadar"   # 目标仓库（格式: owner/repo）
+    branch: "main"                    # 目标分支
+    path: "output/news"               # 数据保存路径
+    commit_message: "同步热点数据 - {date}"  # 提交信息模板
+
   # 数据拉取配置（从远程同步到本地）
   # 用于 MCP Server 等场景：爬虫存到远程，MCP 拉取到本地分析
   pull:
