@@ -162,7 +162,9 @@ jobs:
           # 配置 Git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config credential.helper '!f() { echo username=x-access-token; echo "password=${{ secrets.GH_TOKEN }}"; }; f'
+
+          # 使用自定义 token 配置 remote URL
+          git remote set-url origin "https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/18815292408/TrendRadar.git"
 
           # 检出目标分支
           git fetch origin main || true
