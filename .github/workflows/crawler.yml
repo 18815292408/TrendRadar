@@ -63,10 +63,10 @@ jobs:
           fetch-depth: 1
           clean: true
 
-      # ═══════════════════════════════════════════════════════════════
+      # ═══════════════════════════════════════════════════════════════════════
       # 试用期限制已移除 - 定时任务将永久运行
       # Trial period limit removed - Scheduled tasks will run permanently
-      # ═══════════════════════════════════════════════════════════════
+      # ═══════════════════════════════════════════════════════════════════════
 
       # --------------------------------------------------------------------------------
       # 🚦 TRAFFIC CONTROL / 流量控制
@@ -144,83 +144,102 @@ jobs:
           GITHUB_ACTIONS: true
         run: python -m trendradar
 
-      # ═══════════════════════════════════════════════════════════════════════
-      # GitHub 同步步骤 - 使用 curl 直接调用 API
-      # ═══════════════════════════════════════════════════════════════════════
+      # ═══════════════════════════════════════════════════════════════════════════════
+      # GitHub 同步步骤 - 使用 Python
+      # ═══════════════════════════════════════════════════════════════════════════════
       - name: Sync data to GitHub
         if: success()
         run: |
-          # 检查是否配置了 GH_TOKEN
-          if [ -z "${{ secrets.GH_TOKEN }}" ]; then
-            echo "GH_TOKEN 未配置，跳过同步"
-            exit 0
-          fi
+          python3 << 'PYTHON_SCRIPT'
+          import os
+          import sys
+          import base64
+          import json
+          import urllib.request
 
-          echo "正在同步数据到 GitHub..."
+          GH_TOKEN = os.environ.get('GH_TOKEN', '')
+          REPO = '18815292408/TrendRadar'
+          BRANCH = 'main'
 
-          # 获取今天的日期
-          TODAY=$(date +%Y-%m-%d)
-          COMMIT_MSG="同步热点数据 - ${TODAY}"
+          if not GH_TOKEN:
+              print('GH_TOKEN 未配置，跳过同步')
+              sys.exit(0)
 
-          # 检查 output/news 目录是否存在新数据
-          if [ ! -d "output/news" ] || [ -z "$(ls -A output/news 2>/dev/null)" ]; then
-            echo "没有数据文件需要同步"
-            exit 0
-          fi
+          print('正在同步数据到 GitHub...')
 
-          echo "发现新数据文件..."
+          # 检查数据目录
+          news_dir = 'output/news'
+          if not os.path.exists(news_dir):
+              print('没有数据文件需要同步')
+              sys.exit(0)
 
-          # 获取当前分支的 SHA
-          BRANCH_SHA=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
-            "https://api.github.com/repos/18815292408/TrendRadar/git/ref/heads/main" | \
-            python -c "import sys,json; print(json.load(sys.stdin)['object']['sha'])")
+          db_files = [f for f in os.listdir(news_dir) if f.endswith('.db')]
+          if not db_files:
+              print('没有数据库文件需要同步')
+              sys.exit(0)
 
-          echo "当前分支 SHA: $BRANCH_SHA"
+          print(f'发现 {len(db_files)} 个数据库文件...')
 
-          # 同步每个数据库文件
-          for db_file in output/news/*.db; do
-            if [ -f "$db_file" ]; then
-              filename=$(basename "$db_file")
-              echo "同步文件: $filename"
+          # 设置请求头
+          headers = {
+              'Authorization': f'Bearer {GH_TOKEN}',
+              'Accept': 'application/vnd.github.v3+json',
+              'Content-Type': 'application/json'
+          }
 
-              # 获取文件内容的 base64 编码
-              CONTENT=$(base64 -w0 "$db_file")
+          def make_request(url, method='GET', data=None):
+              req = urllib.request.Request(url, method=method, headers=headers)
+              if data:
+                  req.data = json.dumps(data).encode('utf-8')
+              try:
+                  with urllib.request.urlopen(req) as response:
+                      return json.loads(response.read().decode('utf-8'))
+              except Exception as e:
+                  return {'error': str(e)}
 
-              # 检查文件是否已存在
-              FILE_INFO=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
-                "https://api.github.com/repos/18815292408/TrendRadar/contents/output/news/$filename")
+          # 获取当前分支 SHA
+          ref_url = f'https://api.github.com/repos/{REPO}/git/ref/heads/{BRANCH}'
+          ref_data = make_request(ref_url)
+          if 'error' in ref_data:
+              print(f'获取分支信息失败: {ref_data["error"]}')
+              sys.exit(1)
 
-              # 尝试获取 SHA
-              FILE_SHA=$(echo "$FILE_INFO" | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('sha', ''))" 2>/dev/null || echo "")
+          print(f'当前分支 SHA: {ref_data["object"]["sha"]}')
 
-              # 准备 API 请求数据
-              if [ -z "$FILE_SHA" ] || [ "$FILE_SHA" = "None" ]; then
-                # 创建新文件
-                DATA="{\"message\":\"${COMMIT_MSG}\",\"content\":\"${CONTENT}\"}"
-                RESULT=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
-                  -H "Accept: application/vnd.github.v3+json" \
-                  -X PUT \
-                  -d "$DATA" \
-                  "https://api.github.com/repos/18815292408/TrendRadar/contents/output/news/$filename")
-              else
-                # 更新现有文件
-                DATA="{\"message\":\"${COMMIT_MSG}\",\"content\":\"${CONTENT}\",\"sha\":\"${FILE_SHA}\"}"
-                RESULT=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
-                  -H "Accept: application/vnd.github.v3+json" \
-                  -X PUT \
-                  -d "$DATA" \
-                  "https://api.github.com/repos/18815292408/TrendRadar/contents/output/news/$filename")
-              fi
+          # 同步每个文件
+          for db_file in db_files:
+              filepath = os.path.join(news_dir, db_file)
+              filename = db_file
+              print(f'同步文件: {filename}')
 
-              # 检查是否成功
-              if echo "$RESULT" | python -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if 'content' in d or 'commit' in d else 1)" 2>/dev/null; then
-                echo "  ✓ $filename 同步成功"
-              else
-                echo "  ✗ $filename 同步失败"
-                echo "$RESULT" | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('message', d))" 2>/dev/null
-              fi
-            fi
-          done
+              # 读取文件内容并 base64 编码
+              with open(filepath, 'rb') as f:
+                  content = base64.b64encode(f.read()).decode('utf-8')
 
-          echo ""
-          echo "数据同步完成！"
+              # 检查文件是否存在
+              content_url = f'https://api.github.com/repos/{REPO}/contents/output/news/{filename}'
+              existing = make_request(content_url)
+
+              # 准备请求数据
+              data = {
+                  'message': f'同步热点数据 - {filename.replace(".db", "")}',
+                  'content': content
+              }
+
+              if 'sha' in existing:
+                  data['sha'] = existing['sha']
+                  print(f'  更新现有文件 (SHA: {existing["sha"][:8]}...)')
+              else:
+                  print(f'  创建新文件')
+
+              # 上传文件
+              result = make_request(content_url, method='PUT', data=data)
+
+              if 'content' in result:
+                  print(f'  ✓ {filename} 同步成功')
+              else:
+                  print(f'  ✗ {filename} 同步失败: {result.get("message", result)}')
+
+          print('')
+          print('数据同步完成！')
+          PYTHON_SCRIPT
