@@ -63,10 +63,10 @@ jobs:
           fetch-depth: 1
           clean: true
 
-      # ═══════════════════════════════════════════════════════════════════════
+      # ═══════════════════════════════════════════════════════════════════════════════
       # 试用期限制已移除 - 定时任务将永久运行
       # Trial period limit removed - Scheduled tasks will run permanently
-      # ═══════════════════════════════════════════════════════════════════════
+      # ═══════════════════════════════════════════════════════════════════════════════
 
       # --------------------------------------------------------------------------------
       # 🚦 TRAFFIC CONTROL / 流量控制
@@ -144,9 +144,9 @@ jobs:
           GITHUB_ACTIONS: true
         run: python -m trendradar
 
-      # ═══════════════════════════════════════════════════════════════════════════════
-      # GitHub 同步步骤 - 使用 Python
-      # ═══════════════════════════════════════════════════════════════════════════════
+      # ═══════════════════════════════════════════════════════════════════════════════════════
+      # GitHub 同步步骤 - 使用 Python（同步 news 和 rss 数据）
+      # ═══════════════════════════════════════════════════════════════════════════════════════
       - name: Sync data to GitHub
         if: success()
         env:
@@ -168,19 +168,6 @@ jobs:
               sys.exit(0)
 
           print('正在同步数据到 GitHub...')
-
-          # 检查数据目录
-          news_dir = 'output/news'
-          if not os.path.exists(news_dir):
-              print('没有数据文件需要同步')
-              sys.exit(0)
-
-          db_files = [f for f in os.listdir(news_dir) if f.endswith('.db')]
-          if not db_files:
-              print('没有数据库文件需要同步')
-              sys.exit(0)
-
-          print(f'发现 {len(db_files)} 个数据库文件...')
 
           # 设置请求头
           headers = {
@@ -208,40 +195,62 @@ jobs:
 
           print(f'当前分支 SHA: {ref_data["object"]["sha"]}')
 
-          # 同步每个文件
-          for db_file in db_files:
-              filepath = os.path.join(news_dir, db_file)
-              filename = db_file
-              print(f'同步文件: {filename}')
+          # 同步函数：同步指定目录的数据
+          def sync_directory(dir_name, commit_prefix):
+              dir_path = dir_name
+              if not os.path.exists(dir_path):
+                  print(f'目录 {dir_path} 不存在，跳过')
+                  return 0
 
-              # 读取文件内容并 base64 编码
-              with open(filepath, 'rb') as f:
-                  content = base64.b64encode(f.read()).decode('utf-8')
+              db_files = [f for f in os.listdir(dir_path) if f.endswith('.db')]
+              if not db_files:
+                  print(f'目录 {dir_path} 没有数据库文件')
+                  return 0
 
-              # 检查文件是否存在
-              content_url = f'https://api.github.com/repos/{REPO}/contents/output/news/{filename}'
-              existing = make_request(content_url)
+              print(f'目录 {dir_path}: 发现 {len(db_files)} 个数据库文件')
 
-              # 准备请求数据
-              data = {
-                  'message': f'同步热点数据 - {filename.replace(".db", "")}',
-                  'content': content
-              }
+              synced_count = 0
+              for db_file in sorted(db_files):
+                  filepath = os.path.join(dir_path, db_file)
+                  print(f'  同步文件: {db_file}')
 
-              if 'sha' in existing:
-                  data['sha'] = existing['sha']
-                  print(f'  更新现有文件 (SHA: {existing["sha"][:8]}...)')
-              else:
-                  print(f'  创建新文件')
+                  # 读取文件内容并 base64 编码
+                  with open(filepath, 'rb') as f:
+                      content = base64.b64encode(f.read()).decode('utf-8')
 
-              # 上传文件
-              result = make_request(content_url, method='PUT', data=data)
+                  # 检查文件是否存在
+                  content_url = f'https://api.github.com/repos/{REPO}/contents/{dir_path}/{db_file}'
+                  existing = make_request(content_url)
 
-              if 'content' in result:
-                  print(f'  ✓ {filename} 同步成功')
-              else:
-                  print(f'  ✗ {filename} 同步失败: {result.get("message", result)}')
+                  # 准备请求数据
+                  data = {
+                      'message': f'{commit_prefix} - {db_file.replace(".db", "")}',
+                      'content': content
+                  }
+
+                  if 'sha' in existing:
+                      data['sha'] = existing['sha']
+                      print(f'    更新现有文件 (SHA: {existing["sha"][:8]}...)')
+                  else:
+                      print(f'    创建新文件')
+
+                  # 上传文件
+                  result = make_request(content_url, method='PUT', data=data)
+
+                  if 'content' in result:
+                      print(f'    ✓ {db_file} 同步成功')
+                      synced_count += 1
+                  else:
+                      print(f'    ✗ {db_file} 同步失败: {result.get("message", result)}')
+
+              return synced_count
+
+          # 同步新闻数据
+          news_count = sync_directory('output/news', '同步热点数据')
+
+          # 同步 RSS 数据
+          rss_count = sync_directory('output/rss', '同步RSS订阅')
 
           print('')
-          print('数据同步完成！')
+          print(f'同步完成！新闻: {news_count} 个文件, RSS: {rss_count} 个文件')
           PYTHON_SCRIPT
